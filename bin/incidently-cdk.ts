@@ -1,20 +1,25 @@
-#!/usr/bin/env node
-import * as cdk from 'aws-cdk-lib';
-import { IncidentlyCdkStack } from '../lib/incidently-cdk-stack';
+import "source-map-support/register";
+import * as cdk from "aws-cdk-lib";
+import { InfraStack } from "../lib/infra-stack";
+import { EcrStack } from "../lib/ecr-stack";
+import { CertificateStack } from "../lib/certificate-stack";
+import { DnsStack } from "../lib/dns-stack";
+
+/** uncomment if you have a purchased domain name on AWS! */
+// const domainName = "www.domain.com";
+// const hostedZoneId = "HOSTED_ZONE_ID";
 
 const app = new cdk.App();
-new IncidentlyCdkStack(app, 'IncidentlyCdkStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
+const env = { account: "692859939927", region: "ap-southeast-2" };
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+const { repository } = new EcrStack(app, "IncidentlyRailsRepo", { env });
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
-
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+new InfraStack(app, "IncidentlyRailsStack", {
+  repository,
 });
+
+/** uncomment if you have a purchased domain name on AWS! */
+// const { hostedZone } = new CertificateStack(app, 'CertificateStack', { env, hostedZoneId, domainName });
+
+/** uncomment if you have a purchased domain name on AWS! */
+// const dnsStack = new DnsStack(app, 'DnsStack', { env, hostedZone, domainName, distribution })
