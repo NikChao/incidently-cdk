@@ -3,6 +3,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as rds from "aws-cdk-lib/aws-rds";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Construct } from "constructs";
@@ -108,24 +109,33 @@ export class InfraStack extends cdk.Stack {
       },
     );
 
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel",
+        ],
+        resources: ["*"],
+      }),
+    );
+
     const container = taskDefinition.addContainer("IncidentlyRailsContainer", {
       image: ecs.ContainerImage.fromEcrRepository(props.repository),
       logging: ecs.LogDriver.awsLogs({ streamPrefix: "IncidentlyRails" }),
+      portMappings: [{ containerPort: 3000 }],
       environment: {
         RAILS_ENV: "production",
         RAILS_LOG_TO_STDOUT: "1",
       },
     });
 
-    // Add database connection if provided
-    container.addSecret(
-      "DATABASE_URL",
-      ecs.Secret.fromSecretsManager(
-        databaseSecret,
-        "engine",
-      ),
-    );
+    // FIXED: Remove the incorrect DATABASE_URL from secret and use individual components
+    // The secret only contains username and password, not a full DATABASE_URL
 
+    // Database connection using individual environment variables
     container.addSecret(
       "DB_PASSWORD",
       ecs.Secret.fromSecretsManager(
@@ -150,8 +160,15 @@ export class InfraStack extends cdk.Stack {
     );
     container.addEnvironment("DB_NAME", "incidently_production");
 
+    // Generate a secure SECRET_KEY_BASE for production
+    // You should generate a new one using: rails secret
+    container.addEnvironment(
+      "SECRET_KEY_BASE",
+      process.env.RAILS_SECRET_KEY_BASE!,
+    );
+
     container.addPortMappings({
-      containerPort: 80, // Changed from 8080 to match your Dockerfile EXPOSE 80
+      containerPort: 3000, // Changed from 8080 to match your Dockerfile EXPOSE 80
     });
 
     // Create Fargate Service
@@ -161,6 +178,7 @@ export class InfraStack extends cdk.Stack {
         "IncidentlyRailsService",
         {
           cluster,
+          enableExecuteCommand: true,
           taskDefinition: taskDefinition,
           desiredCount: 1,
           publicLoadBalancer: true,
