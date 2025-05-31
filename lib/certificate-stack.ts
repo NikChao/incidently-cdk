@@ -18,19 +18,27 @@ export class CertificateStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: CertificateStackProps) {
     super(scope, id, props);
 
-    this.hostedZone = HostedZone.fromHostedZoneAttributes(this, "HostedZone", {
-      zoneName: props.domainName,
-      hostedZoneId: props.hostedZoneId,
-    });
+    this.hostedZone = HostedZone.fromHostedZoneAttributes(
+      this,
+      "IncidentlyHostedZone",
+      {
+        zoneName: props.domainName,
+        hostedZoneId: props.hostedZoneId,
+      },
+    );
 
     // Deprecated, should use Certificate instead
-    this.certificate = new DnsValidatedCertificate(this, "SiteCertificate", {
-      domainName: props.domainName,
-      hostedZone: this.hostedZone,
-      // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html
-      // To use a certificate in AWS Certificate Manager (ACM) to require HTTPS between viewers and CloudFront,
-      // make sure you request (or import) the certificate in the US East (N. Virginia) Region (us-east-1).
-      region: "us-east-1",
-    });
+    this.certificate = new DnsValidatedCertificate(
+      this,
+      "IncidentlySiteCertificate",
+      {
+        domainName: props.domainName,
+        hostedZone: this.hostedZone,
+        // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html
+        // To use a certificate in AWS Certificate Manager (ACM) to require HTTPS between viewers and CloudFront,
+        // make sure you request (or import) the certificate in the US East (N. Virginia) Region (us-east-1).
+        region: "us-east-1",
+      },
+    );
   }
 }

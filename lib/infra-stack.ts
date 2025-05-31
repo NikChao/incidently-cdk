@@ -7,12 +7,15 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { Construct } from "constructs";
+import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
 export interface InfraStackProps extends cdk.StackProps {
   repository: ecr.IRepository;
 }
 
 export class InfraStack extends cdk.Stack {
+  public readonly loadBalancer: ApplicationLoadBalancer;
+
   constructor(scope: Construct, id: string, props: InfraStackProps) {
     super(scope, id, props);
 
@@ -44,7 +47,6 @@ export class InfraStack extends cdk.Stack {
       },
     );
 
-    // Create subnet group for RDS (private subnets only)
     const subnetGroup = new rds.SubnetGroup(this, "DatabaseSubnetGroup", {
       vpc: vpc,
       description: "Subnet group for PostgreSQL RDS",
@@ -53,7 +55,6 @@ export class InfraStack extends cdk.Stack {
       },
     });
 
-    // Create RDS PostgreSQL instance (minimum spec)
     const database = new rds.DatabaseInstance(this, "PostgreSQLDatabase", {
       engine: rds.DatabaseInstanceEngine.postgres({
         version: rds.PostgresEngineVersion.VER_17_5,
@@ -66,34 +67,18 @@ export class InfraStack extends cdk.Stack {
       vpc: vpc,
       subnetGroup: subnetGroup,
       securityGroups: [databaseSecurityGroup],
-      allocatedStorage: 20, // Minimum for PostgreSQL
+      allocatedStorage: 20,
       storageType: rds.StorageType.GP2,
       deleteAutomatedBackups: true,
-      backupRetention: cdk.Duration.days(1), // Minimum backup retention
-      deletionProtection: false, // Set to true for production
+      backupRetention: cdk.Duration.days(1),
+      deletionProtection: false,
       storageEncrypted: true,
-      monitoringInterval: cdk.Duration.seconds(0), // Disable enhanced monitoring for cost savings
-      enablePerformanceInsights: false, // Disable for cost savings
+      monitoringInterval: cdk.Duration.seconds(0),
+      enablePerformanceInsights: false,
       autoMinorVersionUpgrade: true,
       allowMajorVersionUpgrade: false,
       databaseName: "incidently_production",
       port: 5432,
-    });
-
-    // Output the database endpoint and secret ARN
-    new cdk.CfnOutput(this, "DatabaseEndpoint", {
-      value: database.instanceEndpoint.hostname,
-      description: "PostgreSQL database endpoint",
-    });
-
-    new cdk.CfnOutput(this, "DatabaseSecretArn", {
-      value: databaseSecret.secretArn,
-      description: "ARN of the database credentials secret",
-    });
-
-    new cdk.CfnOutput(this, "DatabaseSecurityGroupId", {
-      value: databaseSecurityGroup.securityGroupId,
-      description: "Security Group ID for the database",
     });
 
     const cluster = new ecs.Cluster(this, "IncidentlyRailsCluster", {
@@ -132,44 +117,26 @@ export class InfraStack extends cdk.Stack {
       },
     });
 
-    // FIXED: Remove the incorrect DATABASE_URL from secret and use individual components
-    // The secret only contains username and password, not a full DATABASE_URL
-
     // Database connection using individual environment variables
     container.addSecret(
       "DB_PASSWORD",
-      ecs.Secret.fromSecretsManager(
-        databaseSecret,
-        "password",
-      ),
+      ecs.Secret.fromSecretsManager(databaseSecret, "password"),
     );
     container.addSecret(
       "DB_USERNAME",
-      ecs.Secret.fromSecretsManager(
-        databaseSecret,
-        "username",
-      ),
+      ecs.Secret.fromSecretsManager(databaseSecret, "username"),
     );
-    container.addEnvironment(
-      "DB_HOST",
-      database.instanceEndpoint.hostname,
-    );
+    container.addEnvironment("DB_HOST", database.instanceEndpoint.hostname);
     container.addEnvironment(
       "DB_PORT",
       database.instanceEndpoint.port.toString(),
     );
     container.addEnvironment("DB_NAME", "incidently_production");
 
-    // Generate a secure SECRET_KEY_BASE for production
-    // You should generate a new one using: rails secret
     container.addEnvironment(
       "SECRET_KEY_BASE",
       process.env.RAILS_SECRET_KEY_BASE!,
     );
-
-    container.addPortMappings({
-      containerPort: 3000, // Changed from 8080 to match your Dockerfile EXPOSE 80
-    });
 
     // Create Fargate Service
     const fargateService = new ecs_patterns
@@ -182,12 +149,8 @@ export class InfraStack extends cdk.Stack {
           taskDefinition: taskDefinition,
           desiredCount: 1,
           publicLoadBalancer: true,
-          /** Uncomment these if you're using a domain name! */
-          // redirectHTTP: true,
-          // protocol: ApplicationProtocol.HTTPS,
-          // domainZone: props.hostedZoneId,
-          // domainName: props.domainName,
-          // certificate: props.certificate,
+          // Don't use HTTPS on ALB since CloudFront will handle SSL termination
+          redirectHTTP: false,
           healthCheck: {
             command: ["CMD-SHELL", "exit 0"],
             timeout: cdk.Duration.minutes(10),
@@ -195,6 +158,8 @@ export class InfraStack extends cdk.Stack {
           },
         },
       );
+
+    this.loadBalancer = fargateService.loadBalancer;
 
     // Allow Fargate service to connect to database
     databaseSecurityGroup.addIngressRule(
@@ -209,18 +174,35 @@ export class InfraStack extends cdk.Stack {
       healthyHttpCodes: "200",
     });
 
-    // Optional: Define Auto Scaling policies
+    // Auto Scaling
     const scaling = fargateService.service.autoScaleTaskCount({
       minCapacity: 1,
-      maxCapacity: 1,
+      maxCapacity: 3,
     });
 
     scaling.scaleOnCpuUtilization("CpuScaling", {
-      targetUtilizationPercent: 50,
+      targetUtilizationPercent: 70,
     });
 
     scaling.scaleOnMemoryUtilization("MemoryScaling", {
-      targetUtilizationPercent: 50,
+      targetUtilizationPercent: 80,
+    });
+
+    // Create CloudFront Distribution
+    // Outputs
+    new cdk.CfnOutput(this, "DatabaseEndpoint", {
+      value: database.instanceEndpoint.hostname,
+      description: "PostgreSQL database endpoint",
+    });
+
+    new cdk.CfnOutput(this, "DatabaseSecretArn", {
+      value: databaseSecret.secretArn,
+      description: "ARN of the database credentials secret",
+    });
+
+    new cdk.CfnOutput(this, "DatabaseSecurityGroupId", {
+      value: databaseSecurityGroup.securityGroupId,
+      description: "Security Group ID for the database",
     });
 
     new cdk.CfnOutput(this, "LoadBalancerDNS", {
