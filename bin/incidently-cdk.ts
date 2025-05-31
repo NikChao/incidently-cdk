@@ -5,11 +5,14 @@ import { EcrStack } from "../lib/ecr-stack";
 import { CertificateStack } from "../lib/certificate-stack";
 import { DnsStack } from "../lib/dns-stack";
 import { CdnStack } from "../lib/cdn-stack";
+import { SplashPageStack } from "../lib/splash-page-stack";
 
 const rootDomainName = "pingln.com";
-const domainNames = [
+const splashDomainNames = [
   rootDomainName,
   "www.pingln.com",
+];
+const appDomainNames = [
   "app.pingln.com",
 ];
 
@@ -35,17 +38,34 @@ const { loadBalancer } = new InfraStack(app, "IncidentlyRailsStack", {
   repository,
 });
 
-const { distribution } = new CdnStack(app, "IncidentlyCdnStack", {
-  env,
-  hostedZone,
-  certificate,
-  domainNames,
-  loadBalancer,
-});
+const { distribution: splashDistribution } = new SplashPageStack(
+  app,
+  "IncidentlySplashPageStack",
+  {
+    env,
+    hostedZone,
+    certificate,
+    domainNames: splashDomainNames,
+  },
+);
+
+const { distribution: appDistribution } = new CdnStack(
+  app,
+  "IncidentlyCdnStack",
+  {
+    env,
+    hostedZone,
+    certificate,
+    domainNames: appDomainNames,
+    loadBalancer,
+  },
+);
 
 new DnsStack(app, "IncidentlyDnsStack", {
   env,
   hostedZone,
-  domainNames,
-  distribution,
+  domainNames: appDomainNames,
+  distribution: appDistribution,
+  splashDistribution: splashDistribution,
+  splashDomainNames: splashDomainNames,
 });
