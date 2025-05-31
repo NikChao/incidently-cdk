@@ -26,10 +26,7 @@ export class CdnStack extends cdk.Stack {
         originRequestPolicyName: "RailsOriginRequestPolicy",
         comment: "Forward all headers, cookies, and query strings to Rails",
         cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
-        headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList(
-          "Host",
-          "User-Agent",
-        ),
+        headerBehavior: cloudfront.OriginRequestHeaderBehavior.all(),
         queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
       },
     );
@@ -80,4 +77,3 @@ export class CdnStack extends cdk.Stack {
     });
   }
 }
-
