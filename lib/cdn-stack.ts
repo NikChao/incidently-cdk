@@ -10,7 +10,7 @@ export interface CdnStackProps extends cdk.StackProps {
   loadBalancer: ApplicationLoadBalancer;
   certificate: certificatemanager.ICertificate;
   hostedZone: route53.IHostedZone;
-  domainName: string;
+  domainNames: string[];
 }
 
 export class CdnStack extends cdk.Stack {
@@ -49,7 +49,7 @@ export class CdnStack extends cdk.Stack {
 
     this.distribution = new cloudfront.Distribution(this, "Distribution", {
       comment: "Rails application distribution",
-      domainNames: [props.domainName],
+      domainNames: props.domainNames,
       certificate: props.certificate,
       defaultBehavior: {
         origin: new origins.LoadBalancerV2Origin(props.loadBalancer, {

@@ -6,7 +6,13 @@ import { CertificateStack } from "../lib/certificate-stack";
 import { DnsStack } from "../lib/dns-stack";
 import { CdnStack } from "../lib/cdn-stack";
 
-const domainName = "www.pingln.com";
+const rootDomainName = "pingln.com";
+const domainNames = [
+  rootDomainName,
+  "www.pingln.com",
+  "app.pingln.com",
+];
+
 const hostedZoneId = "Z03098722RNSY0BV6773E";
 
 const app = new cdk.App();
@@ -20,7 +26,7 @@ const { hostedZone, certificate } = new CertificateStack(
   {
     env,
     hostedZoneId,
-    domainName,
+    domainName: rootDomainName,
   },
 );
 
@@ -29,17 +35,17 @@ const { loadBalancer } = new InfraStack(app, "IncidentlyRailsStack", {
   repository,
 });
 
-const { distribution } = new CdnStack(app, "IncidentlyCfnStack", {
+const { distribution } = new CdnStack(app, "IncidentlyCdnStack", {
   env,
   hostedZone,
   certificate,
-  domainName,
+  domainNames,
   loadBalancer,
 });
 
 new DnsStack(app, "IncidentlyDnsStack", {
   env,
   hostedZone,
-  domainName,
+  domainNames,
   distribution,
 });

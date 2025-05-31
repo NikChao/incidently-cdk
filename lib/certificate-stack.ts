@@ -30,9 +30,10 @@ export class CertificateStack extends cdk.Stack {
     // Deprecated, should use Certificate instead
     this.certificate = new DnsValidatedCertificate(
       this,
-      "IncidentlySiteCertificate",
+      "IncidentlySiteMultiSubdomainCertificate",
       {
         domainName: props.domainName,
+        subjectAlternativeNames: [`*.${props.domainName}`],
         hostedZone: this.hostedZone,
         // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cnames-and-https-requirements.html
         // To use a certificate in AWS Certificate Manager (ACM) to require HTTPS between viewers and CloudFront,
