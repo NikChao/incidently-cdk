@@ -138,6 +138,12 @@ export class InfraStack extends cdk.Stack {
       process.env.RAILS_SECRET_KEY_BASE!,
     );
 
+    container.addEnvironment("SLACK_CLIENT_ID", process.env.SLACK_CLIENT_ID!);
+    container.addEnvironment(
+      "SLACK_CLIENT_SECRET",
+      process.env.SLACK_CLIENT_SECRET!,
+    );
+
     // Create Fargate Service
     const fargateService = new ecs_patterns
       .ApplicationLoadBalancedFargateService(
