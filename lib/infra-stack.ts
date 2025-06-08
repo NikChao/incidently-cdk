@@ -11,6 +11,7 @@ import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 
 export interface InfraStackProps extends cdk.StackProps {
   repository: ecr.IRepository;
+  smtpSecret: secretsmanager.ISecret;
 }
 
 export class InfraStack extends cdk.Stack {
@@ -142,6 +143,15 @@ export class InfraStack extends cdk.Stack {
     container.addEnvironment(
       "SLACK_CLIENT_SECRET",
       process.env.SLACK_CLIENT_SECRET!,
+    );
+
+    container.addSecret(
+      "SES_SMTP_USERNAME",
+      ecs.Secret.fromSecretsManager(props.smtpSecret, "SES_SMTP_USERNAME"),
+    );
+    container.addSecret(
+      "SES_SMTP_PASSWORD",
+      ecs.Secret.fromSecretsManager(props.smtpSecret, "SES_SMTP_PASSWORD"),
     );
 
     // Create Fargate Service

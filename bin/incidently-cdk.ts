@@ -6,6 +6,7 @@ import { CertificateStack } from "../lib/certificate-stack";
 import { DnsStack } from "../lib/dns-stack";
 import { CdnStack } from "../lib/cdn-stack";
 import { SplashPageStack } from "../lib/splash-page-stack";
+import { NotificationStack } from "../lib/notification-stack";
 
 const rootDomainName = "pingln.com";
 const splashDomainNames = [
@@ -33,9 +34,20 @@ const { hostedZone, certificate } = new CertificateStack(
   },
 );
 
+const { smtpSecret } = new NotificationStack(
+  app,
+  "IncidentlyNotificationStack",
+  {
+    env,
+    hostedZone,
+    domainName: rootDomainName,
+  },
+);
+
 const { loadBalancer } = new InfraStack(app, "IncidentlyRailsStack", {
   env,
   repository,
+  smtpSecret,
 });
 
 const { distribution: splashDistribution } = new SplashPageStack(
