@@ -12,6 +12,7 @@ import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 export interface InfraStackProps extends cdk.StackProps {
   repository: ecr.IRepository;
   smtpSecret: secretsmanager.ISecret;
+  smsPolicy: iam.ManagedPolicy;
 }
 
 export class InfraStack extends cdk.Stack {
@@ -107,6 +108,8 @@ export class InfraStack extends cdk.Stack {
         resources: ["*"],
       }),
     );
+
+    taskDefinition.taskRole.addManagedPolicy(props.smsPolicy);
 
     const container = taskDefinition.addContainer("IncidentlyRailsContainer", {
       image: ecs.ContainerImage.fromEcrRepository(props.repository),
