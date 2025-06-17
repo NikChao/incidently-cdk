@@ -148,35 +148,36 @@ export class InfraStack extends cdk.Stack {
       process.env.SLACK_CLIENT_SECRET!,
     );
 
-    container.addSecret(
+    // TODO: Secrets plz
+    container.addEnvironment(
       "SES_SMTP_USERNAME",
-      ecs.Secret.fromSecretsManager(props.smtpSecret, "SES_SMTP_USERNAME"),
+      process.env.SES_SMTP_USERNAME!,
     );
-    container.addSecret(
+    container.addEnvironment(
       "SES_SMTP_PASSWORD",
-      ecs.Secret.fromSecretsManager(props.smtpSecret, "SES_SMTP_PASSWORD"),
+      process.env.SES_SMTP_PASSWORD!,
     );
 
     // Create Fargate Service
     const fargateService = new ecs_patterns
       .ApplicationLoadBalancedFargateService(
-        this,
-        "IncidentlyRailsService",
-        {
-          cluster,
-          enableExecuteCommand: true,
-          taskDefinition: taskDefinition,
-          desiredCount: 1,
-          publicLoadBalancer: true,
-          // Don't use HTTPS on ALB since CloudFront will handle SSL termination
-          redirectHTTP: false,
-          healthCheck: {
-            command: ["CMD-SHELL", "exit 0"],
-            timeout: cdk.Duration.minutes(10),
-            interval: cdk.Duration.seconds(10),
-          },
+      this,
+      "IncidentlyRailsService",
+      {
+        cluster,
+        enableExecuteCommand: true,
+        taskDefinition: taskDefinition,
+        desiredCount: 1,
+        publicLoadBalancer: true,
+        // Don't use HTTPS on ALB since CloudFront will handle SSL termination
+        redirectHTTP: false,
+        healthCheck: {
+          command: ["CMD-SHELL", "exit 0"],
+          timeout: cdk.Duration.minutes(10),
+          interval: cdk.Duration.seconds(10),
         },
-      );
+      },
+    );
 
     this.loadBalancer = fargateService.loadBalancer;
 
