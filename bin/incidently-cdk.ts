@@ -35,7 +35,7 @@ const { hostedZone, certificate } = new CertificateStack(
   },
 );
 
-const { smtpSecret } = new NotificationStack(
+new NotificationStack(
   app,
   "IncidentlyNotificationStack",
   {
@@ -56,7 +56,6 @@ const { smsPolicy } = new SmsStack(
 const { loadBalancer } = new InfraStack(app, "IncidentlyRailsStack", {
   env,
   repository,
-  smtpSecret,
   smsPolicy,
 });
 

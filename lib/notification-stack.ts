@@ -11,8 +11,6 @@ interface NotificationStackProps extends cdk.StackProps {
 }
 
 export class NotificationStack extends cdk.Stack {
-  public readonly smtpSecret: secretsmanager.Secret;
-
   constructor(scope: Construct, id: string, props: NotificationStackProps) {
     super(scope, id, props);
 
@@ -61,19 +59,5 @@ export class NotificationStack extends cdk.Stack {
         resources: ["*"],
       }),
     );
-
-    const smtpAccessKey = new iam.AccessKey(this, "SesSmtpAccessKey", {
-      user: smtpUser,
-    });
-
-    this.smtpSecret = new secretsmanager.Secret(this, "SesSmtpSecret", {
-      secretName: "ses-smtp-credentials",
-      secretObjectValue: {
-        SES_SMTP_USERNAME: cdk.SecretValue.unsafePlainText(
-          smtpAccessKey.accessKeyId,
-        ),
-        SES_SMTP_PASSWORD: smtpAccessKey.secretAccessKey,
-      },
-    });
   }
 }

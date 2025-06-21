@@ -11,7 +11,6 @@ import { ApplicationLoadBalancer } from "aws-cdk-lib/aws-elasticloadbalancingv2"
 
 export interface InfraStackProps extends cdk.StackProps {
   repository: ecr.IRepository;
-  smtpSecret: secretsmanager.ISecret;
   smsPolicy: iam.ManagedPolicy;
 }
 
