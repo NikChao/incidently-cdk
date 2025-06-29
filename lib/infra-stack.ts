@@ -146,6 +146,10 @@ export class InfraStack extends cdk.Stack {
       "SLACK_CLIENT_SECRET",
       process.env.SLACK_CLIENT_SECRET!,
     );
+    container.addEnvironment(
+      "DISCORD_PUBLIC_KEY",
+      process.env.DISCORD_PUBLIC_KEY!,
+    );
 
     // TODO: Secrets plz
     container.addEnvironment(
