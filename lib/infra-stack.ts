@@ -151,6 +151,15 @@ export class InfraStack extends cdk.Stack {
       process.env.DISCORD_PUBLIC_KEY!,
     );
 
+    container.addEnvironment(
+      "NOTION_OAUTH_CLIENT_ID",
+      process.env.NOTION_OAUTH_CLIENT_ID!,
+    );
+    container.addEnvironment(
+      "NOTION_OAUTH_CLIENT_SECRET",
+      process.env.NOTION_OAUTH_CLIENT_SECRET!,
+    );
+
     // TODO: Secrets plz
     container.addEnvironment(
       "SES_SMTP_USERNAME",
@@ -164,23 +173,23 @@ export class InfraStack extends cdk.Stack {
     // Create Fargate Service
     const fargateService = new ecs_patterns
       .ApplicationLoadBalancedFargateService(
-      this,
-      "IncidentlyRailsService",
-      {
-        cluster,
-        enableExecuteCommand: true,
-        taskDefinition: taskDefinition,
-        desiredCount: 1,
-        publicLoadBalancer: true,
-        // Don't use HTTPS on ALB since CloudFront will handle SSL termination
-        redirectHTTP: false,
-        healthCheck: {
-          command: ["CMD-SHELL", "exit 0"],
-          timeout: cdk.Duration.minutes(10),
-          interval: cdk.Duration.seconds(10),
+        this,
+        "IncidentlyRailsService",
+        {
+          cluster,
+          enableExecuteCommand: true,
+          taskDefinition: taskDefinition,
+          desiredCount: 1,
+          publicLoadBalancer: true,
+          // Don't use HTTPS on ALB since CloudFront will handle SSL termination
+          redirectHTTP: false,
+          healthCheck: {
+            command: ["CMD-SHELL", "exit 0"],
+            timeout: cdk.Duration.minutes(10),
+            interval: cdk.Duration.seconds(10),
+          },
         },
-      },
-    );
+      );
 
     this.loadBalancer = fargateService.loadBalancer;
 
