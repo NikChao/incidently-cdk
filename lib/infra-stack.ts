@@ -108,6 +108,16 @@ export class InfraStack extends cdk.Stack {
       }),
     );
 
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream",
+        ],
+        resources: ["*"],
+      }),
+    );
+
     taskDefinition.taskRole.addManagedPolicy(props.smsPolicy);
 
     const container = taskDefinition.addContainer("IncidentlyRailsContainer", {
