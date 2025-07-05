@@ -170,6 +170,24 @@ export class InfraStack extends cdk.Stack {
       process.env.NOTION_OAUTH_CLIENT_SECRET!,
     );
 
+    container.addEnvironment(
+      "LINEAR_OAUTH_CLIENT_ID",
+      process.env.LINEAR_OAUTH_CLIENT_ID!,
+    );
+    container.addEnvironment(
+      "LINEAR_OAUTH_CLIENT_SECRET",
+      process.env.LINEAR_OAUTH_CLIENT_SECRET!,
+    );
+
+    container.addEnvironment(
+      "GITHUB_OAUTH_CLIENT_ID",
+      process.env.GITHUB_OAUTH_CLIENT_ID!,
+    );
+    container.addEnvironment(
+      "GITHUB_OAUTH_CLIENT_SECRET",
+      process.env.GITHUB_OAUTH_CLIENT_SECRET!,
+    );
+
     // TODO: Secrets plz
     container.addEnvironment(
       "SES_SMTP_USERNAME",
