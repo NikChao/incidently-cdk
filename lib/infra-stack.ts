@@ -151,6 +151,21 @@ export class InfraStack extends cdk.Stack {
       process.env.RAILS_SECRET_KEY_BASE!,
     );
 
+    container.addEnvironment(
+      "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+      process.env.ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY!,
+    );
+
+    container.addEnvironment(
+      "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+      process.env.ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY!,
+    );
+
+    container.addEnvironment(
+      "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+      process.env.ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT!,
+    );
+
     container.addEnvironment("SLACK_CLIENT_ID", process.env.SLACK_CLIENT_ID!);
     container.addEnvironment(
       "SLACK_CLIENT_SECRET",
